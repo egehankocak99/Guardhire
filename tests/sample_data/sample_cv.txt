@@ -1,0 +1,69 @@
+Aisha Okonkwo
+Email: a.okonkwo@protonmail.com
+Phone: +44 7823 456789
+LinkedIn: https://linkedin.com/in/aisha-okonkwo-data
+Location: London, UK
+
+PROFESSIONAL SUMMARY
+Senior Data Engineer with 7 years of experience designing and operating
+large-scale data infrastructure across financial services and e-commerce.
+Specialised in real-time streaming pipelines, cloud-native data platforms,
+and DataOps practices. Proven track record of reducing pipeline latency
+by 60% and cutting cloud infrastructure costs through architectural
+optimisation. Comfortable working across the full data stack from raw
+ingestion to serving layers consumed by ML models and business analytics.
+
+WORK EXPERIENCE
+
+Senior Data Engineer — NovaPay Financial Services, London         2021–Present
+  • Designed and maintained a real-time transaction risk scoring pipeline
+    processing 2.4M events/day using Apache Kafka and Apache Flink.
+  • Led migration of legacy ETL batch jobs to streaming architecture,
+    reducing end-to-end latency from 4 hours to under 90 seconds.
+  • Architected a centralised data platform on AWS (S3, Glue, Redshift,
+    EMR) used by 120+ analysts and 8 data science teams.
+  • Introduced dbt for transformation layer; grew coverage from 0% to 85%
+    of production models with automated testing.
+  • Mentored 2 junior engineers; ran internal "Data Engineering Bootcamp"
+    adopted across the engineering organisation.
+
+Data Engineer — Marketly Ltd, London                              2018–2021
+  • Built and maintained Spark-based batch pipelines on GCP (Dataflow,
+    BigQuery, Cloud Storage) for a 50M-user advertising platform.
+  • Developed data quality framework using Great Expectations; reduced
+    data quality incidents by 73%.
+  • Collaborated with ML engineers to deploy feature engineering pipelines
+    serving 4 production recommendation models.
+  • Automated deployment of Airflow DAGs using Terraform and CI/CD
+    pipelines (GitHub Actions).
+
+Junior Data Analyst — InsightCo, Manchester                       2016–2018
+  • Produced weekly business intelligence reports using SQL and Tableau.
+  • Wrote Python scripts to automate data extraction from 12 REST APIs.
+
+EDUCATION
+
+BSc Computer Science (First Class Honours)
+University of Manchester — Graduated 2016
+
+TECHNICAL SKILLS
+
+Languages:     Python (expert), Scala (proficient), SQL (expert), Bash
+Streaming:     Apache Kafka, Apache Flink, Apache Spark Structured Streaming
+Batch:         Apache Spark, dbt, Apache Airflow
+Cloud:         AWS (S3, Glue, Redshift, EMR, Lambda), GCP (BigQuery, Dataflow)
+Databases:     PostgreSQL, Snowflake, Redshift, MongoDB
+Infrastructure: Terraform, Docker, Kubernetes, GitHub Actions
+Monitoring:    Datadog, PagerDuty, Grafana
+
+CERTIFICATIONS
+  • AWS Certified Data Analytics — Specialty (2023)
+  • Google Professional Data Engineer (2021)
+  • Databricks Certified Associate Developer for Apache Spark (2022)
+
+LANGUAGES
+  English (native), French (conversational), Yoruba (native)
+
+INTERESTS
+  Open-source contributor to Apache Airflow (15 merged PRs).
+  Organiser of London Women in Data Engineering meetup.

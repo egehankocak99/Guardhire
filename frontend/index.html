@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GuardHire — AI Hiring Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #0f2044;
+      --navy-light: #1a3260;
+      --green: #10b981;
+      --green-light: #d1fae5;
+      --red: #ef4444;
+      --red-light: #fee2e2;
+      --amber: #f59e0b;
+      --amber-light: #fef3c7;
+      --white: #ffffff;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-400: #9ca3af;
+      --gray-600: #4b5563;
+      --gray-800: #1f2937;
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--navy);
+      color: var(--white);
+      padding: 0 2rem;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .header-left { display: flex; align-items: center; gap: 1rem; }
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--green); }
+    .tagline {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.6);
+      font-weight: 400;
+      border-left: 1px solid rgba(255,255,255,0.2);
+      padding-left: 1rem;
+    }
+    .eu-badge {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: var(--green);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+    .safety-score-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.8rem;
+    }
+    .safety-score-badge .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    /* ── Layout ── */
+    .app-body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    main {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+      max-width: 1000px;
+    }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 4px;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+      width: fit-content;
+    }
+    .tab-btn {
+      padding: 8px 20px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      color: var(--gray-600);
+      transition: all 0.15s;
+    }
+    .tab-btn.active {
+      background: var(--navy);
+      color: var(--white);
+    }
+    .tab-btn:hover:not(.active) { background: var(--gray-100); }
+
+    /* ── Tab Panels ── */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1.25rem;
+    }
+    .card-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--navy);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 1rem;
+    }
+
+    /* ── Form elements ── */
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--gray-600);
+      margin-bottom: 6px;
+    }
+    textarea, input[type="text"], select {
+      width: 100%;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.875rem;
+      border: 1px solid var(--gray-200);
+      border-radius: 6px;
+      padding: 10px 12px;
+      color: var(--gray-800);
+      background: var(--white);
+      transition: border-color 0.15s;
+      resize: vertical;
+    }
+    textarea:focus, input:focus, select:focus {
+      outline: none;
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(15,32,68,0.08);
+    }
+    textarea { min-height: 140px; }
+
+    /* ── Upload zone ── */
+    .upload-zone {
+      border: 2px dashed var(--gray-200);
+      border-radius: var(--radius);
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--navy);
+      background: rgba(15,32,68,0.03);
+    }
+    .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .upload-zone .icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .upload-zone p { font-size: 0.875rem; color: var(--gray-600); }
+    .upload-zone .hint { font-size: 0.75rem; color: var(--gray-400); margin-top: 4px; }
+    #upload-filename {
+      display: none;
+      background: var(--green-light);
+      color: #065f46;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      margin-top: 8px;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: var(--navy);
+      color: var(--white);
+    }
+    .btn-primary:hover { background: var(--navy-light); }
+    .btn-primary:disabled { background: var(--gray-400); cursor: not-allowed; }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    .btn.loading .spinner { display: block; }
+    .btn.loading .btn-text { opacity: 0.7; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Safety pipeline bar ── */
+    .safety-bar {
+      display: none;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 1rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .safety-bar.visible { display: block; }
+    .safety-bar-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 0.75rem;
+    }
+    .safety-checks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .safety-check {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--gray-100);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 500;
+    }
+    .safety-check.pass { background: var(--green-light); color: #065f46; }
+    .safety-check.fail { background: var(--red-light); color: #991b1b; }
+    .safety-check.warn { background: var(--amber-light); color: #92400e; }
+    .check-icon { font-size: 0.9rem; }
+
+    /* ── Results panel ── */
+    .results-panel { display: none; }
+    .results-panel.visible { display: block; }
+
+    .score-gauge {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .gauge-circle {
+      width: 88px; height: 88px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .gauge-score {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--white);
+    }
+    .gauge-label { font-size: 0.7rem; color: var(--white); opacity: 0.85; margin-top: 2px; }
+    .gauge-info { flex: 1; }
+    .gauge-info h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 4px; }
+    .gauge-info p { font-size: 0.875rem; color: var(--gray-600); line-height: 1.5; }
+
+    .recommendation-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.875rem;
+      margin-top: 8px;
+    }
+    .rec-advance { background: var(--green-light); color: #065f46; }
+    .rec-hold { background: var(--amber-light); color: #92400e; }
+    .rec-reject { background: var(--red-light); color: #991b1b; }
+
+    /* ── Requirements table ── */
+    .req-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .req-table th {
+      background: var(--gray-50);
+      padding: 8px 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.78rem;
+      color: var(--gray-600);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .req-table td { padding: 10px 12px; border-bottom: 1px solid var(--gray-100); vertical-align: top; }
+    .req-table tr:last-child td { border-bottom: none; }
+    .score-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.8rem;
+    }
+    .score-high { background: var(--green-light); color: #065f46; }
+    .score-mid { background: var(--amber-light); color: #92400e; }
+    .score-low { background: var(--red-light); color: #991b1b; }
+
+    /* ── Strengths/gaps lists ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .list-block h4 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+    }
+    .list-block.strengths h4 { color: #065f46; }
+    .list-block.gaps h4 { color: #991b1b; }
+    .list-block ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .list-block li {
+      font-size: 0.85rem;
+      padding: 4px 8px 4px 24px;
+      border-radius: 4px;
+      position: relative;
+    }
+    .list-block li::before {
+      position: absolute; left: 8px;
+    }
+    .strengths li { background: var(--green-light); color: #065f46; }
+    .strengths li::before { content: "✓"; }
+    .gaps li { background: var(--red-light); color: #991b1b; }
+    .gaps li::before { content: "△"; }
+
+    /* ── Questions panel ── */
+    .questions-form { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 0.5rem; }
+    .form-group { flex: 1; min-width: 180px; }
+    .question-categories { display: flex; flex-direction: column; gap: 1rem; }
+    .question-cat {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .cat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--navy);
+      color: var(--white);
+      cursor: pointer;
+      user-select: none;
+    }
+    .cat-header h4 { font-size: 0.875rem; font-weight: 600; }
+    .cat-toggle { font-size: 0.9rem; transition: transform 0.2s; }
+    .cat-toggle.open { transform: rotate(180deg); }
+    .cat-body { padding: 0; }
+    .question-item {
+      border-top: 1px solid var(--gray-100);
+      padding: 1rem 1.25rem;
+    }
+    .question-item:first-child { border-top: none; }
+    .question-text { font-size: 0.9rem; font-weight: 500; margin-bottom: 8px; }
+    .question-meta { display: flex; flex-direction: column; gap: 6px; }
+    .meta-row { display: flex; gap: 8px; align-items: flex-start; font-size: 0.8rem; }
+    .meta-label {
+      font-weight: 600;
+      color: var(--navy);
+      min-width: 120px;
+      flex-shrink: 0;
+    }
+    .meta-content { color: var(--gray-600); }
+    .probes-list { display: none; }
+    .probes-toggle {
+      background: none; border: 1px solid var(--gray-200); border-radius: 4px;
+      font-size: 0.75rem; padding: 3px 8px; cursor: pointer;
+      font-family: 'Inter', sans-serif; color: var(--navy); margin-top: 6px;
+    }
+    .probes-toggle:hover { background: var(--gray-100); }
+
+    /* ── Blocked response ── */
+    .blocked-banner {
+      display: none;
+      background: var(--red-light);
+      border: 1px solid #fca5a5;
+      border-radius: var(--radius);
+      padding: 1rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .blocked-banner.visible { display: flex; gap: 12px; align-items: flex-start; }
+    .blocked-banner .icon { font-size: 1.4rem; flex-shrink: 0; }
+    .blocked-banner h4 { font-size: 0.9rem; font-weight: 700; color: #991b1b; margin-bottom: 4px; }
+    .blocked-banner p { font-size: 0.85rem; color: #7f1d1d; }
+
+    /* ── Audit sidebar ── */
+    .audit-sidebar {
+      width: 320px;
+      flex-shrink: 0;
+      background: var(--white);
+      border-left: 1px solid var(--gray-200);
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 68px);
+      position: sticky;
+      top: 68px;
+    }
+    .audit-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--gray-200);
+      background: var(--gray-50);
+    }
+    .audit-header h3 { font-size: 0.875rem; font-weight: 600; color: var(--navy); }
+    .audit-toggle-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 0.8rem; color: var(--gray-400);
+    }
+    .audit-entries {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .audit-entry {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 0.78rem;
+    }
+    .audit-entry .ae-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .audit-entry .ae-ep { font-weight: 600; color: var(--navy); }
+    .audit-entry .ae-status { padding: 2px 6px; border-radius: 10px; font-weight: 600; font-size: 0.7rem; }
+    .ae-status.allowed { background: var(--green-light); color: #065f46; }
+    .ae-status.warning { background: var(--amber-light); color: #92400e; }
+    .ae-status.blocked { background: var(--red-light); color: #991b1b; }
+    .audit-entry .ae-score { color: var(--gray-600); }
+    .audit-entry .ae-time { color: var(--gray-400); font-size: 0.7rem; }
+    .audit-load-btn {
+      margin: 0.75rem;
+      width: calc(100% - 1.5rem);
+      background: var(--gray-100); border: 1px solid var(--gray-200);
+      border-radius: 6px; padding: 8px; font-family: 'Inter', sans-serif;
+      font-size: 0.8rem; cursor: pointer; color: var(--navy); font-weight: 500;
+    }
+    .audit-load-btn:hover { background: var(--gray-200); }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .audit-sidebar { display: none; }
+      .two-col { grid-template-columns: 1fr; }
+      .questions-form { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo">Guard<span>Hire</span></div>
+    <div class="tagline">AI Hiring Assistant with Built-in Safety</div>
+    <div class="eu-badge">EU AI Act Compliant</div>
+  </div>
+  <div class="safety-score-badge">
+    <div class="dot" id="global-dot"></div>
+    <span id="global-score-text">Safety: —</span>
+  </div>
+</header>
+
+<div class="app-body">
+  <main>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('screen', this)">CV Screener</button>
+      <button class="tab-btn" onclick="switchTab('questions', this)">Interview Questions</button>
+    </div>
+
+    <!-- ── CV Screener Tab ── -->
+    <div id="tab-screen" class="tab-panel active">
+
+      <div class="card">
+        <div class="card-title">Upload CV</div>
+        <div class="upload-zone" id="upload-zone">
+          <input type="file" id="cv-file" accept=".txt,.pdf" onchange="handleFileUpload(event)" />
+          <div class="icon">📄</div>
+          <p>Drop your CV here or click to browse</p>
+          <div class="hint">Supported formats: .txt, .pdf</div>
+          <div id="upload-filename"></div>
+        </div>
+        <div style="margin-top:1rem;">
+          <label for="cv-text">Or paste CV text directly</label>
+          <textarea id="cv-text" placeholder="Paste full CV text here..."></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Job Description</div>
+        <textarea id="jd-text" placeholder="Paste the full job description here..." style="min-height:120px;"></textarea>
+      </div>
+
+      <button class="btn btn-primary" id="screen-btn" onclick="runScreening()">
+        <div class="spinner"></div>
+        <span class="btn-text">Screen Candidate</span>
+      </button>
+
+      <!-- Safety pipeline status -->
+      <div class="safety-bar" id="safety-bar-screen" style="margin-top:1.25rem;">
+        <div class="safety-bar-title">Safety Pipeline</div>
+        <div class="safety-checks" id="safety-checks-screen"></div>
+      </div>
+
+      <!-- Blocked banner -->
+      <div class="blocked-banner" id="blocked-screen">
+        <div class="icon">🚫</div>
+        <div>
+          <h4>Request Blocked by Safety Pipeline</h4>
+          <p id="blocked-reason-screen"></p>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="results-panel" id="results-panel">
+
+        <div class="card">
+          <div class="card-title">Overall Assessment</div>
+          <div class="score-gauge">
+            <div class="gauge-circle" id="gauge-circle">
+              <div>
+                <div class="gauge-score" id="gauge-score">—</div>
+                <div class="gauge-label">/ 10</div>
+              </div>
+            </div>
+            <div class="gauge-info">
+              <h3 id="gauge-title">Candidate Assessment</h3>
+              <p id="gauge-summary"></p>
+              <div id="rec-badge" class="recommendation-badge"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Requirement Breakdown</div>
+          <table class="req-table">
+            <thead>
+              <tr>
+                <th>Requirement</th>
+                <th>Score</th>
+                <th>Evidence / Gap</th>
+              </tr>
+            </thead>
+            <tbody id="req-table-body"></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="two-col">
+            <div class="list-block strengths">
+              <h4>✓ Strengths</h4>
+              <ul id="strengths-list"></ul>
+            </div>
+            <div class="list-block gaps">
+              <h4>△ Gaps</h4>
+              <ul id="gaps-list"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Interview Focus Areas</div>
+          <ul id="focus-areas-list" style="list-style:disc;padding-left:1.2rem;font-size:0.875rem;color:var(--gray-600);display:flex;flex-direction:column;gap:4px;"></ul>
+        </div>
+
+      </div><!-- /results-panel -->
+    </div><!-- /tab-screen -->
+
+    <!-- ── Interview Questions Tab ── -->
+    <div id="tab-questions" class="tab-panel">
+
+      <div class="card">
+        <div class="card-title">Role Details</div>
+        <div class="questions-form">
+          <div class="form-group">
+            <label for="job-role">Job Role / Title</label>
+            <input type="text" id="job-role" placeholder="e.g. Senior Data Engineer" />
+          </div>
+          <div class="form-group" style="max-width:160px;">
+            <label for="seniority">Seniority Level</label>
+            <select id="seniority">
+              <option value="Junior">Junior</option>
+              <option value="Mid">Mid</option>
+              <option value="Senior" selected>Senior</option>
+              <option value="Lead">Lead</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:1rem;">
+          <label for="candidate-profile">Candidate Profile (optional)</label>
+          <textarea id="candidate-profile" placeholder="Paste a brief candidate profile to tailor questions..." style="min-height:80px;"></textarea>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="questions-btn" onclick="generateQuestions()">
+        <div class="spinner"></div>
+        <span class="btn-text">Generate Questions</span>
+      </button>
+
+      <!-- Safety pipeline status -->
+      <div class="safety-bar" id="safety-bar-questions" style="margin-top:1.25rem;">
+        <div class="safety-bar-title">Safety Pipeline</div>
+        <div class="safety-checks" id="safety-checks-questions"></div>
+      </div>
+
+      <!-- Blocked banner -->
+      <div class="blocked-banner" id="blocked-questions">
+        <div class="icon">🚫</div>
+        <div>
+          <h4>Request Blocked by Safety Pipeline</h4>
+          <p id="blocked-reason-questions"></p>
+        </div>
+      </div>
+
+      <div id="questions-results" style="margin-top:1.25rem;"></div>
+
+    </div><!-- /tab-questions -->
+
+  </main>
+
+  <!-- ── Audit Sidebar ── -->
+  <aside class="audit-sidebar">
+    <div class="audit-header">
+      <h3>Audit Log</h3>
+      <button class="audit-load-btn" onclick="loadAuditLog()" style="width:auto;margin:0;padding:4px 10px;font-size:0.75rem;">Refresh</button>
+    </div>
+    <div class="audit-entries" id="audit-entries">
+      <div style="color:var(--gray-400);font-size:0.8rem;text-align:center;padding:2rem;">No entries yet</div>
+    </div>
+  </aside>
+
+</div><!-- /app-body -->
+
+<script>
+  const API = 'http://localhost:8000';
+
+  // ── Tab switching ──
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // ── File upload ──
+  async function handleFileUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const el = document.getElementById('upload-filename');
+    el.style.display = 'block';
+
+    if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+      const text = await file.text();
+      document.getElementById('cv-text').value = text;
+      el.textContent = '✓ ' + file.name + ' loaded';
+    } else {
+      el.textContent = '📎 ' + file.name + ' (PDF — text extraction not available in browser; paste text above)';
+    }
+  }
+
+  // Drag and drop
+  const zone = document.getElementById('upload-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    const f = e.dataTransfer.files[0];
+    if (f) {
+      document.getElementById('cv-file').files = e.dataTransfer.files;
+      handleFileUpload({ target: { files: [f] } });
+    }
+  });
+
+  // ── Safety checks display ──
+  function renderSafetyChecks(containerId, checksObj, warnings) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    Object.entries(checksObj).forEach(([name, data]) => {
+      const el = document.createElement('div');
+      const score = typeof data.score === 'number' ? (data.score * 100).toFixed(0) : '—';
+      let cls = 'pass', icon = '✓';
+      if (!data.passed) { cls = 'fail'; icon = '✗'; }
+      else if (warnings && warnings.some(w => w.startsWith(name))) { cls = 'warn'; icon = '⚠'; }
+      el.className = `safety-check ${cls}`;
+      el.innerHTML = `<span class="check-icon">${icon}</span>${name.replace(/_/g,' ')} <strong>${score}%</strong>`;
+      container.appendChild(el);
+    });
+  }
+
+  function updateGlobalScore(score) {
+    const text = document.getElementById('global-score-text');
+    const dot = document.getElementById('global-dot');
+    text.textContent = 'Safety: ' + (score * 100).toFixed(0) + '%';
+    dot.style.background = score > 0.8 ? 'var(--green)' : score > 0.6 ? 'var(--amber)' : 'var(--red)';
+  }
+
+  // ── CV Screening ──
+  async function runScreening() {
+    const cvText = document.getElementById('cv-text').value.trim();
+    const jd = document.getElementById('jd-text').value.trim();
+    if (!cvText || !jd) { alert('Please provide both CV text and a job description.'); return; }
+
+    const btn = document.getElementById('screen-btn');
+    btn.classList.add('loading'); btn.disabled = true;
+
+    // Reset UI
+    document.getElementById('blocked-screen').classList.remove('visible');
+    document.getElementById('results-panel').classList.remove('visible');
+    document.getElementById('safety-bar-screen').classList.remove('visible');
+
+    try {
+      const resp = await fetch(`${API}/screen`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cv_text: cvText, job_description: jd }),
+      });
+      const data = await resp.json();
+      const meta = data.safety_metadata;
+
+      // Safety bar
+      document.getElementById('safety-bar-screen').classList.add('visible');
+      renderSafetyChecks('safety-checks-screen', meta.checks_summary, meta.warnings);
+      updateGlobalScore(meta.overall_safety_score);
+
+      if (data.status === 'BLOCKED') {
+        const b = document.getElementById('blocked-screen');
+        b.classList.add('visible');
+        document.getElementById('blocked-reason-screen').textContent = data.blocked_reason || 'Request blocked by safety controls.';
+      } else {
+        renderScreeningResults(data.screening_result);
+      }
+    } catch (err) {
+      alert('Error contacting API: ' + err.message + '\n\nMake sure the GuardHire server is running on port 8000.');
+    } finally {
+      btn.classList.remove('loading'); btn.disabled = false;
+      loadAuditLog();
+    }
+  }
+
+  function renderScreeningResults(r) {
+    if (!r) return;
+    document.getElementById('results-panel').classList.add('visible');
+
+    // Gauge
+    const score = r.overall_fit_score;
+    const circle = document.getElementById('gauge-circle');
+    const color = score >= 7 ? '#10b981' : score >= 5 ? '#f59e0b' : '#ef4444';
+    circle.style.background = color;
+    document.getElementById('gauge-score').textContent = score.toFixed(1);
+    document.getElementById('gauge-summary').textContent = r.summary;
+
+    // Recommendation badge
+    const badge = document.getElementById('rec-badge');
+    const recMap = { Advance: 'rec-advance', Hold: 'rec-hold', Reject: 'rec-reject' };
+    const recIcon = { Advance: '✓', Hold: '⏸', Reject: '✗' };
+    badge.className = 'recommendation-badge ' + (recMap[r.recommendation] || '');
+    badge.textContent = (recIcon[r.recommendation] || '') + ' ' + r.recommendation;
+
+    // Requirements table
+    const tbody = document.getElementById('req-table-body');
+    tbody.innerHTML = '';
+    (r.requirement_scores || []).forEach(req => {
+      const pillCls = req.score >= 7 ? 'score-high' : req.score >= 5 ? 'score-mid' : 'score-low';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escHtml(req.requirement)}</td>
+        <td><span class="score-pill ${pillCls}">${req.score.toFixed(1)}</span></td>
+        <td>${escHtml(req.evidence)}${req.gap ? `<br><em style="color:var(--red);font-size:0.78rem;">Gap: ${escHtml(req.gap)}</em>` : ''}</td>`;
+      tbody.appendChild(tr);
+    });
+
+    // Strengths & gaps
+    const sl = document.getElementById('strengths-list'); sl.innerHTML = '';
+    (r.strengths || []).forEach(s => { const li = document.createElement('li'); li.textContent = s; sl.appendChild(li); });
+    const gl = document.getElementById('gaps-list'); gl.innerHTML = '';
+    (r.gaps || []).forEach(g => { const li = document.createElement('li'); li.textContent = g; gl.appendChild(li); });
+
+    // Focus areas
+    const fl = document.getElementById('focus-areas-list'); fl.innerHTML = '';
+    (r.interview_focus_areas || []).forEach(a => { const li = document.createElement('li'); li.textContent = a; fl.appendChild(li); });
+  }
+
+  // ── Interview Questions ──
+  async function generateQuestions() {
+    const role = document.getElementById('job-role').value.trim();
+    const seniority = document.getElementById('seniority').value;
+    if (!role) { alert('Please enter a job role.'); return; }
+
+    const btn = document.getElementById('questions-btn');
+    btn.classList.add('loading'); btn.disabled = true;
+
+    document.getElementById('blocked-questions').classList.remove('visible');
+    document.getElementById('safety-bar-questions').classList.remove('visible');
+    document.getElementById('questions-results').innerHTML = '';
+
+    const profile = document.getElementById('candidate-profile').value.trim();
+
+    try {
+      const resp = await fetch(`${API}/questions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_role: role, seniority_level: seniority, candidate_profile: profile || null }),
+      });
+      const data = await resp.json();
+      const meta = data.safety_metadata;
+
+      document.getElementById('safety-bar-questions').classList.add('visible');
+      renderSafetyChecks('safety-checks-questions', meta.checks_summary, meta.warnings);
+      updateGlobalScore(meta.overall_safety_score);
+
+      if (data.status === 'BLOCKED') {
+        const b = document.getElementById('blocked-questions');
+        b.classList.add('visible');
+        document.getElementById('blocked-reason-questions').textContent = data.blocked_reason || 'Request blocked.';
+      } else {
+        renderQuestions(data.question_set);
+      }
+    } catch (err) {
+      alert('Error contacting API: ' + err.message);
+    } finally {
+      btn.classList.remove('loading'); btn.disabled = false;
+      loadAuditLog();
+    }
+  }
+
+  const CATEGORY_COLORS = {
+    'Technical': '#0f2044',
+    'Behavioural': '#1e40af',
+    'Situational': '#7c3aed',
+    'Culture Add': '#065f46',
+    'Role-Specific': '#92400e',
+  };
+
+  function renderQuestions(qs) {
+    if (!qs) return;
+    const container = document.getElementById('questions-results');
+    container.innerHTML = `
+      <p style="font-size:0.8rem;color:var(--gray-400);margin-bottom:1rem;">
+        ${qs.total_questions} questions · ~${qs.estimated_duration_minutes} min interview
+      </p>`;
+
+    // Group by category
+    const groups = {};
+    (qs.questions || []).forEach(q => {
+      if (!groups[q.category]) groups[q.category] = [];
+      groups[q.category].push(q);
+    });
+
+    Object.entries(groups).forEach(([cat, questions]) => {
+      const catEl = document.createElement('div');
+      catEl.className = 'question-cat';
+      catEl.style.marginBottom = '1rem';
+      const color = CATEGORY_COLORS[cat] || '#0f2044';
+
+      let questionsHtml = questions.map((q, i) => `
+        <div class="question-item">
+          <div class="question-text">${i+1}. ${escHtml(q.question)}</div>
+          <div class="question-meta">
+            <div class="meta-row">
+              <span class="meta-label">Listen for:</span>
+              <span class="meta-content">${escHtml(q.what_to_listen_for)}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Red flags:</span>
+              <span class="meta-content">${(q.red_flags||[]).map(escHtml).join(' · ')}</span>
+            </div>
+            <button class="probes-toggle" onclick="toggleProbes(this)">▾ Follow-up probes</button>
+            <ul class="probes-list" style="display:none;margin-top:6px;padding-left:1.2rem;font-size:0.8rem;color:var(--gray-600);display:flex;flex-direction:column;gap:3px;">
+              ${(q.follow_up_probes||[]).map(p => `<li>${escHtml(p)}</li>`).join('')}
+            </ul>
+          </div>
+        </div>`).join('');
+
+      catEl.innerHTML = `
+        <div class="cat-header" style="background:${color}" onclick="toggleCat(this)">
+          <h4>${escHtml(cat)}</h4>
+          <span class="cat-toggle">▾</span>
+        </div>
+        <div class="cat-body">${questionsHtml}</div>`;
+      container.appendChild(catEl);
+    });
+  }
+
+  function toggleCat(header) {
+    const body = header.nextElementSibling;
+    const toggle = header.querySelector('.cat-toggle');
+    const open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : 'block';
+    toggle.classList.toggle('open', !open);
+  }
+
+  function toggleProbes(btn) {
+    const ul = btn.nextElementSibling;
+    const show = ul.style.display === 'none' || ul.style.display === '';
+    ul.style.display = show ? 'flex' : 'none';
+    btn.textContent = show ? '▴ Follow-up probes' : '▾ Follow-up probes';
+  }
+
+  // ── Audit log ──
+  async function loadAuditLog() {
+    try {
+      const resp = await fetch(`${API}/audit?n=10`);
+      const data = await resp.json();
+      const container = document.getElementById('audit-entries');
+      if (!data.entries || data.entries.length === 0) {
+        container.innerHTML = '<div style="color:var(--gray-400);font-size:0.8rem;text-align:center;padding:2rem;">No entries yet</div>';
+        return;
+      }
+      container.innerHTML = '';
+      [...data.entries].reverse().forEach(e => {
+        const el = document.createElement('div');
+        el.className = 'audit-entry';
+        const statusCls = (e.status || '').toLowerCase();
+        const time = new Date(e.timestamp).toLocaleTimeString();
+        el.innerHTML = `
+          <div class="ae-header">
+            <span class="ae-ep">${escHtml(e.endpoint)}</span>
+            <span class="ae-status ${statusCls}">${e.status}</span>
+          </div>
+          <div class="ae-score">Safety: ${((e.overall_safety_score||0)*100).toFixed(0)}%</div>
+          <div class="ae-time">${time} · ${e.session_id ? e.session_id.slice(0,8) : '—'}</div>`;
+        container.appendChild(el);
+      });
+    } catch (_) { /* API not running yet */ }
+  }
+
+  // ── Utils ──
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Initial load
+  loadAuditLog();
+  setInterval(loadAuditLog, 30000);
+</script>
+</body>
+</html>

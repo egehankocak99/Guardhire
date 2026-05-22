@@ -1,0 +1,20 @@
+{
+  "report_metadata": {
+    "generated_at": "2026-05-20T10:00:00+00:00",
+    "system": "GuardHire",
+    "version": "0.1.0",
+    "total_tests": 35,
+    "total_passed": 33,
+    "total_failed": 2,
+    "overall_pass_rate_pct": 94.3,
+    "risk_rating": "MEDIUM",
+    "_note": "This is a placeholder. Run: python red_team/report_generator.py to generate real results."
+  },
+  "category_summary": [
+    {"category": "Prompt Injection", "pass_rate_pct": 100.0, "passed": 8, "failed": 0, "false_positives": 0},
+    {"category": "Jailbreaks",       "pass_rate_pct": 100.0, "passed": 7, "failed": 0, "false_positives": 0},
+    {"category": "Bias Elicitation", "pass_rate_pct": 87.5,  "passed": 7, "failed": 1, "false_positives": 0},
+    {"category": "PII Extraction",   "pass_rate_pct": 80.0,  "passed": 4, "failed": 1, "false_positives": 0},
+    {"category": "Illegal Criteria", "pass_rate_pct": 100.0, "passed": 7, "failed": 0, "false_positives": 0}
+  ]
+}

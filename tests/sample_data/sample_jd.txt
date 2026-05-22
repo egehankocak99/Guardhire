@@ -1,0 +1,66 @@
+Senior Data Engineer
+Vault Payments Ltd — London, UK (Hybrid)
+
+ABOUT VAULT PAYMENTS
+Vault Payments is a regulated fintech building next-generation payment
+infrastructure for European banks and digital wallet providers. We process
+over 5 billion transactions annually across 18 markets. Our engineering
+teams operate at the intersection of financial systems, real-time data,
+and machine learning. We are regulated by the FCA and operate under PSD2.
+
+THE ROLE
+We are looking for a Senior Data Engineer to join our Core Data Platform
+team. You will own critical components of our real-time data infrastructure,
+working closely with data scientists, ML engineers, and product teams to
+build reliable, scalable, and observable data systems. This is a technical
+individual contributor role with significant scope for growth into a staff
+or principal engineering track.
+
+CORE RESPONSIBILITIES
+  • Design, build, and operate streaming and batch data pipelines at scale
+    (5B+ events/day) using Apache Kafka and Apache Spark.
+  • Own the reliability of our AWS-based data lake and warehouse (S3,
+    Glue Catalog, Redshift, dbt transformation layer).
+  • Implement and maintain data quality frameworks and SLAs across
+    production pipelines serving ML feature stores and BI dashboards.
+  • Lead architectural decisions for our transition from batch to
+    streaming-first data processing.
+  • Collaborate with the ML Platform team to engineer production-grade
+    feature pipelines for fraud detection and credit risk models.
+  • Champion DataOps practices: CI/CD for data pipelines, automated
+    testing, infrastructure-as-code (Terraform).
+  • Participate in on-call rotation for production data platform incidents.
+
+ESSENTIAL REQUIREMENTS
+  • 5+ years of professional experience as a Data Engineer.
+  • Expert-level proficiency in Python and SQL.
+  • Strong hands-on experience with Apache Kafka and Apache Spark
+    (Structured Streaming or Flink).
+  • Practical experience with AWS data services: S3, Glue, Redshift or
+    equivalent cloud data warehouse.
+  • Experience with dbt for transformation layer development and testing.
+  • Proficiency with Apache Airflow or an equivalent orchestration tool.
+  • Solid understanding of distributed systems and streaming architectures.
+  • Experience with infrastructure-as-code (Terraform or CloudFormation).
+
+DESIRABLE SKILLS
+  • Experience in regulated financial services (FCA, PSD2, GDPR context).
+  • Familiarity with real-time fraud detection or risk scoring systems.
+  • Scala or Java experience for JVM-based Spark/Flink optimisation.
+  • Contributions to open-source data engineering projects.
+  • Experience with Databricks or Snowflake.
+  • Knowledge of data mesh or data product architectural patterns.
+
+WHAT WE OFFER
+  • Competitive salary: £90,000–£120,000 depending on experience.
+  • Hybrid working: 2 days/week in our Shoreditch office.
+  • 30 days annual leave + bank holidays.
+  • Private healthcare, dental, and life insurance.
+  • £2,000 annual learning & development budget.
+  • Employee share options scheme.
+  • Sponsorship for professional certifications (AWS, Databricks, etc.).
+
+Vault Payments is an equal opportunities employer. We welcome applications
+from candidates of all backgrounds. We are committed to creating an
+inclusive environment and make reasonable adjustments for candidates
+who require them during the hiring process.
