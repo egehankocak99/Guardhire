@@ -1,23 +1,9 @@
-"""Illegal screening criteria detection for GuardHire.
-
-Detects attempts to screen candidates based on legally protected
-characteristics in BOTH inputs (job descriptions) and outputs
-(screening results).
-
-Legal basis: EU Equal Treatment Directives 2000/78/EC and 2000/43/EC,
-plus national implementations across EU member states.
-"""
-
 from __future__ import annotations
 
 import re
 from typing import Dict, List, Tuple
 
 from schemas.safety import IllegalCriteriaResult, SafetyCheckResult, ThreatLevel
-
-# ---------------------------------------------------------------------------
-# Protected characteristic patterns  (input-side — job description)
-# ---------------------------------------------------------------------------
 
 _INPUT_ILLEGAL_PATTERNS: Dict[str, List[re.Pattern[str]]] = {
     "age": [
@@ -42,9 +28,16 @@ _INPUT_ILLEGAL_PATTERNS: Dict[str, List[re.Pattern[str]]] = {
     "religion": [
         re.compile(r"\b(?:christian|muslim|jewish|hindu|buddhist|sikh)\s+(?:values|background|faith|belief)?\s+(?:required|preferred|essential)\b", re.IGNORECASE),
         re.compile(r"\bsharing\s+our\s+(?:christian|religious)\s+values\b", re.IGNORECASE),
+        re.compile(r"(?:practicing\s+)?(?:christian|muslim|jewish|hindu|buddhist|sikh)\s+preferred", re.IGNORECASE),
+        re.compile(r"practicing\s+(?:christian|muslim|jewish|hindu|buddhist|sikh)", re.IGNORECASE),
+        re.compile(r"must\s+be\s+(?:christian|muslim|jewish|hindu|buddhist|sikh)", re.IGNORECASE),
+        re.compile(r"religious\s+background\s+preferred", re.IGNORECASE),
     ],
     "marital/family status": [
         re.compile(r"\bno\s+family\s+(?:commitments|obligations|responsibilities)\b", re.IGNORECASE),
+        re.compile(r"childcare\s+commitments?", re.IGNORECASE),
+        re.compile(r"family\s+commitments?", re.IGNORECASE),
+        re.compile(r"no\s+childcare", re.IGNORECASE),
         re.compile(r"\bwilling\s+to\s+(?:relocate|travel\s+extensively)\s+(?:without|no)\s+(?:family|personal)\s+commitments?\b", re.IGNORECASE),
         re.compile(r"\bsingle\s+(?:and\s+)?(?:available|flexible|free\s+to\s+travel)\b", re.IGNORECASE),
         re.compile(r"\bno\s+childcare\s+(?:commitments|responsibilities|obligations)\b", re.IGNORECASE),
@@ -63,10 +56,6 @@ _INPUT_ILLEGAL_PATTERNS: Dict[str, List[re.Pattern[str]]] = {
         re.compile(r"\b(?:straight|heterosexual)\s+(?:candidates?\s+)?(?:preferred|only)\b", re.IGNORECASE),
     ],
 }
-
-# ---------------------------------------------------------------------------
-# Protected characteristic patterns  (output-side — screening results)
-# ---------------------------------------------------------------------------
 
 _OUTPUT_ILLEGAL_PATTERNS: Dict[str, List[re.Pattern[str]]] = {
     "age": [
@@ -88,20 +77,10 @@ _OUTPUT_ILLEGAL_PATTERNS: Dict[str, List[re.Pattern[str]]] = {
 }
 
 
-# ---------------------------------------------------------------------------
-# Detection logic
-# ---------------------------------------------------------------------------
-
-
 def _scan_patterns(
     text: str,
     patterns: Dict[str, List[re.Pattern[str]]],
 ) -> Tuple[List[str], List[str]]:
-    """
-    Scan text against all patterns.
-
-    Returns ``(detected_criteria_list, affected_characteristics_list)``.
-    """
     detected_criteria: List[str] = []
     affected_characteristics: List[str] = []
 
@@ -116,17 +95,7 @@ def _scan_patterns(
     return detected_criteria, affected_characteristics
 
 
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
-
-
 def check_illegal_criteria_input(text: str, field_name: str = "job description") -> SafetyCheckResult:
-    """
-    Check user-supplied input (job description) for illegal screening criteria.
-
-    Returns a :class:`SafetyCheckResult`.  Blocks if any illegal criteria detected.
-    """
     detected_criteria, affected_chars = _scan_patterns(text, _INPUT_ILLEGAL_PATTERNS)
 
     if detected_criteria:
@@ -160,11 +129,6 @@ def check_illegal_criteria_input(text: str, field_name: str = "job description")
 
 
 def check_illegal_criteria_output(text: str) -> SafetyCheckResult:
-    """
-    Check LLM-generated output for illegal screening criteria references.
-
-    Returns a :class:`SafetyCheckResult`.  Blocks if any criteria detected.
-    """
     detected_criteria, affected_chars = _scan_patterns(text, _OUTPUT_ILLEGAL_PATTERNS)
 
     if detected_criteria:

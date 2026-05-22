@@ -1,5 +1,3 @@
-"""Pydantic request/response models for the GuardHire API."""
-
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
@@ -10,13 +8,7 @@ from schemas.questions import SeniorityLevel
 from schemas.safety import SafetyStatus
 
 
-# ---------------------------------------------------------------------------
-# Request models
-# ---------------------------------------------------------------------------
-
-
 class ScreeningRequest(BaseModel):
-    """Request body for POST /screen."""
 
     cv_text: str = Field(
         ...,
@@ -35,7 +27,6 @@ class ScreeningRequest(BaseModel):
 
 
 class QuestionsRequest(BaseModel):
-    """Request body for POST /questions."""
 
     job_role: str = Field(
         ...,
@@ -58,13 +49,7 @@ class QuestionsRequest(BaseModel):
     )
 
 
-# ---------------------------------------------------------------------------
-# Response models
-# ---------------------------------------------------------------------------
-
-
 class SafetyMetadata(BaseModel):
-    """Safety pipeline metadata attached to every response."""
 
     status: SafetyStatus
     overall_safety_score: float
@@ -73,16 +58,12 @@ class SafetyMetadata(BaseModel):
 
 
 class BlockedResponse(BaseModel):
-    """Returned when the safety pipeline blocks a request."""
-
     status: str = "BLOCKED"
     blocked_reason: str
     safety_metadata: SafetyMetadata
 
 
 class ScreeningResponse(BaseModel):
-    """Response for POST /screen."""
-
     status: str = "OK"
     screening_result: Optional[Dict[str, Any]] = None
     safety_metadata: SafetyMetadata
@@ -90,8 +71,6 @@ class ScreeningResponse(BaseModel):
 
 
 class QuestionsResponse(BaseModel):
-    """Response for POST /questions."""
-
     status: str = "OK"
     question_set: Optional[Dict[str, Any]] = None
     safety_metadata: SafetyMetadata
@@ -99,15 +78,11 @@ class QuestionsResponse(BaseModel):
 
 
 class AuditResponse(BaseModel):
-    """Response for GET /audit."""
-
     entries: List[Dict[str, Any]]
     total_returned: int
 
 
 class HealthResponse(BaseModel):
-    """Response for GET /health."""
-
     status: str = "healthy"
     version: str = "0.1.0"
     service: str = "GuardHire"

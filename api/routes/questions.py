@@ -1,5 +1,3 @@
-"""POST /questions — Interview question generation endpoint."""
-
 from __future__ import annotations
 
 import sys
@@ -20,13 +18,8 @@ router = APIRouter()
     "/questions",
     response_model=QuestionsResponse,
     summary="Generate structured interview questions",
-    description=(
-        "Generates a structured set of 25 interview questions (5 per category) "
-        "for a given role and seniority level, wrapped by the safety pipeline."
-    ),
 )
 async def questions_endpoint(request: QuestionsRequest) -> QuestionsResponse:
-    """Interview question generation endpoint — wrapped by safety pipeline."""
     try:
         question_set, pipeline_result = generate_questions(
             job_role=request.job_role,

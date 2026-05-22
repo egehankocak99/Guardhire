@@ -1,10 +1,3 @@
-"""Bias detection on LLM outputs for GuardHire.
-
-This module analyses the *output* of the LLM — after the model has
-generated its screening result or question set — and flags any language
-that signals bias against protected characteristics.
-"""
-
 from __future__ import annotations
 
 import json
@@ -15,10 +8,6 @@ from typing import Dict, List, Tuple
 import anthropic
 
 from schemas.safety import BiasDetectionResult, SafetyCheckResult, ThreatLevel
-
-# ---------------------------------------------------------------------------
-# Keyword/pattern banks  (protected characteristic → signal patterns)
-# ---------------------------------------------------------------------------
 
 _GENDER_SIGNALS: List[re.Pattern[str]] = [
     re.compile(p, re.IGNORECASE)
@@ -116,17 +105,7 @@ _CHARACTERISTIC_PATTERN_MAP: Dict[str, List[re.Pattern[str]]] = {
     "disability": _DISABILITY_SIGNALS,
 }
 
-# ---------------------------------------------------------------------------
-# Pattern-based detection
-# ---------------------------------------------------------------------------
-
-
 def _pattern_bias_check(text: str) -> Tuple[float, List[str], List[str]]:
-    """
-    Scan output text for bias signal patterns.
-
-    Returns ``(score, detected_signals, affected_characteristics)``.
-    """
     detected_signals: List[str] = []
     affected_characteristics: List[str] = []
 
@@ -141,23 +120,11 @@ def _pattern_bias_check(text: str) -> Tuple[float, List[str], List[str]]:
     if not detected_signals:
         return 0.0, [], []
 
-    # Score scales with number of unique characteristics implicated
     score = min(1.0, len(affected_characteristics) * 0.25)
     return score, detected_signals, affected_characteristics
 
 
-# ---------------------------------------------------------------------------
-# LLM-based secondary check
-# ---------------------------------------------------------------------------
-
-
 def _llm_bias_score(text: str) -> Tuple[float, List[str]]:
-    """
-    Ask Claude to score bias in the provided output text.
-
-    Returns ``(probability_float, [bias_signals_found])``.
-    Falls back to ``(0.0, [])`` on any error.
-    """
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         return 0.0, []
@@ -193,35 +160,15 @@ def _llm_bias_score(text: str) -> Tuple[float, List[str]]:
         return 0.0, []
 
 
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
-
-
 def check_bias(text: str) -> SafetyCheckResult:
-    """
-    Analyse LLM output text for bias signals.
-
-    Two-stage approach:
-    1. Fast pattern matching
-    2. LLM-based scoring (triggered when pattern score > 0 or as baseline)
-
-    Thresholds (configurable via ``BIAS_THRESHOLD`` env var):
-    - score > 0.6  → BLOCKED (ThreatLevel.HIGH / CRITICAL)
-    - score > threshold (default 0.3) → WARNING (ThreatLevel.MEDIUM)
-    - score ≤ threshold → ALLOWED (ThreatLevel.LOW / NONE)
-
-    Returns a :class:`SafetyCheckResult`.
-    """
     bias_threshold = float(os.getenv("BIAS_THRESHOLD", "0.3"))
 
     pattern_score, pattern_signals, affected_chars = _pattern_bias_check(text)
 
-    # Always run LLM check for outputs to ensure high recall
     llm_score, llm_signals = _llm_bias_score(text)
 
     all_signals = list(set(pattern_signals + llm_signals))
-    combined_score = max(pattern_score, llm_score)  # take pessimistic maximum
+    combined_score = max(pattern_score, llm_score)
 
     if combined_score > 0.6:
         threat = ThreatLevel.CRITICAL if combined_score >= 0.85 else ThreatLevel.HIGH

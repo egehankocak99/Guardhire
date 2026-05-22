@@ -1,8 +1,3 @@
-"""Interview question generation logic for GuardHire.
-
-Generates structured interview question sets wrapped by the safety pipeline.
-"""
-
 from __future__ import annotations
 
 import json
@@ -26,7 +21,6 @@ def _call_llm(
     candidate_profile: str,
     client: anthropic.Anthropic,
 ) -> str:
-    """Perform the actual LLM call for question generation."""
     user_message = QUESTION_USER_TEMPLATE.format(
         job_role=job_role,
         seniority_level=seniority_level,
@@ -48,32 +42,12 @@ def generate_questions(
     candidate_profile: Optional[str] = None,
     session_id: Optional[str] = None,
 ) -> tuple[QuestionSet | None, SafetyPipelineResult]:
-    """
-    Generate a structured interview question set.
-
-    Parameters
-    ----------
-    job_role:
-        The job title/role to generate questions for.
-    seniority_level:
-        Expected seniority level of the candidate.
-    candidate_profile:
-        Optional candidate profile summary to tailor questions.
-    session_id:
-        Optional session UUID for audit log correlation.
-
-    Returns
-    -------
-    (QuestionSet or None, SafetyPipelineResult)
-        If the pipeline is BLOCKED, QuestionSet will be None.
-    """
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         raise EnvironmentError("ANTHROPIC_API_KEY environment variable is not set.")
 
     client = anthropic.Anthropic(api_key=api_key)
 
-    # Combine inputs for safety pipeline inspection
     raw_input = f"Role: {job_role}\nSeniority: {seniority_level}\n"
     if candidate_profile:
         raw_input += f"Candidate Profile:\n{candidate_profile}"
@@ -91,7 +65,6 @@ def generate_questions(
     if pipeline_result.status == SafetyStatus.BLOCKED or llm_response is None:
         return None, pipeline_result
 
-    # Parse LLM JSON response
     try:
         clean = llm_response.strip()
         if clean.startswith("```"):

@@ -1,21 +1,3 @@
-"""Main safety pipeline orchestrator for GuardHire.
-
-Every LLM call is wrapped by this pipeline:
-
-  request
-    → input_guard          (prompt injection, length, encoding)
-    → pii_redactor         (detect + redact PII before LLM)
-    → [LLM call]           (caller-supplied coroutine)
-    → bias_detector        (on LLM output)
-    → toxicity_filter      (on LLM output)
-    → illegal_criteria     (output-side check)
-    → audit_logger         (append-only log)
-    → response
-
-If ANY check that is marked as a hard-stop fails, the pipeline returns
-a BLOCKED SafetyPipelineResult immediately without calling the LLM.
-"""
-
 from __future__ import annotations
 
 import os
@@ -29,11 +11,6 @@ from schemas.safety import (
 )
 from safety import audit_logger, bias_detector, illegal_criteria, input_guard, pii_redactor, toxicity_filter
 
-# ---------------------------------------------------------------------------
-# Weights for overall safety score computation
-# (higher weight = more influence on the aggregate)
-# ---------------------------------------------------------------------------
-
 _CHECK_WEIGHTS: Dict[str, float] = {
     "input_guard": 0.30,
     "pii_redactor": 0.10,
@@ -45,13 +22,7 @@ _CHECK_WEIGHTS: Dict[str, float] = {
 
 
 def _compute_overall_score(checks: List[SafetyCheckResult]) -> float:
-    """
-    Compute weighted safety score from all check results.
-
-    Returns a float in [0, 1] where 0 = maximum threat and 1 = fully safe.
-    Each check contributes ``(1 - check.score) * weight`` to the aggregate
-    safety score (check.score is a threat score, so we invert it).
-    """
+    """Weighted safety score — 0 is max threat, 1 is fully safe."""
     weighted_sum = 0.0
     total_weight = 0.0
     for check in checks:
@@ -64,8 +35,7 @@ def _compute_overall_score(checks: List[SafetyCheckResult]) -> float:
 
 
 def _is_hard_block(check: SafetyCheckResult) -> bool:
-    """Return True if a failed check should stop the pipeline immediately."""
-    # Any check that fails with MEDIUM or higher threat level is a hard block
+    # Any check that fails with MEDIUM or higher threat is a hard block
     hard_block_checks = {
         "input_guard",
         "illegal_criteria_input",
@@ -94,37 +64,9 @@ def run_pipeline(
     session_id: Optional[str] = None,
     extra_inputs: Optional[Dict[str, str]] = None,
 ) -> Tuple[SafetyPipelineResult, Optional[str]]:
-    """
-    Execute the full safety pipeline around a single LLM call.
-
-    Parameters
-    ----------
-    raw_input:
-        The primary user-supplied input text (e.g. combined CV + JD text).
-    endpoint:
-        The API endpoint being called (for audit log).
-    llm_callable:
-        A zero-argument callable that performs the actual LLM call and
-        returns the raw LLM response string.  Receives the *redacted* input
-        via closure — callers should build the closure before calling
-        run_pipeline.
-    session_id:
-        Optional session UUID for correlation across audit log entries.
-    extra_inputs:
-        Optional dict of additional field_name → text pairs to run through
-        input_guard (e.g. separate job description field).
-
-    Returns
-    -------
-    (SafetyPipelineResult, llm_response_or_None)
-        If pipeline is BLOCKED, llm_response will be None.
-    """
     checks: List[SafetyCheckResult] = []
     warnings: List[str] = []
 
-    # ------------------------------------------------------------------
-    # Stage 1: Input guard on primary input
-    # ------------------------------------------------------------------
     input_check = input_guard.check_input(raw_input, field_name="primary_input")
     checks.append(input_check)
 
@@ -152,7 +94,6 @@ def run_pipeline(
     if not input_check.passed:
         warnings.append(f"input_guard: {input_check.details}")
 
-    # Input guard on extra fields (e.g. job description provided separately)
     if extra_inputs:
         for field_name, field_text in extra_inputs.items():
             extra_check = input_guard.check_input(field_text, field_name=field_name)
@@ -178,9 +119,6 @@ def run_pipeline(
                 )
                 return pipeline_result, None
 
-    # ------------------------------------------------------------------
-    # Stage 2: Illegal criteria in input (job description)
-    # ------------------------------------------------------------------
     jd_text = (extra_inputs or {}).get("job_description", raw_input)
     illegal_input_check = illegal_criteria.check_illegal_criteria_input(
         jd_text, field_name="job_description"
@@ -208,18 +146,12 @@ def run_pipeline(
         )
         return pipeline_result, None
 
-    # ------------------------------------------------------------------
-    # Stage 3: PII redaction (applied to what the LLM callable sees)
-    # ------------------------------------------------------------------
     pii_check, _redacted_text = pii_redactor.check_pii(raw_input, field_name="primary_input")
     checks.append(pii_check)
 
     if not pii_check.passed:
         warnings.append(f"pii_redactor: {pii_check.details}")
 
-    # ------------------------------------------------------------------
-    # Stage 4: LLM call (caller closure already uses redacted text)
-    # ------------------------------------------------------------------
     try:
         llm_response: str = llm_callable(_redacted_text)
     except Exception as exc:
@@ -243,9 +175,6 @@ def run_pipeline(
         )
         return pipeline_result, None
 
-    # ------------------------------------------------------------------
-    # Stage 5: Bias detection on LLM output
-    # ------------------------------------------------------------------
     bias_check = bias_detector.check_bias(llm_response)
     checks.append(bias_check)
 
@@ -274,9 +203,6 @@ def run_pipeline(
     if not bias_check.passed:
         warnings.append(f"bias_detector: {bias_check.details}")
 
-    # ------------------------------------------------------------------
-    # Stage 6: Toxicity filter on LLM output
-    # ------------------------------------------------------------------
     tox_check = toxicity_filter.check_toxicity(llm_response)
     checks.append(tox_check)
 
@@ -302,9 +228,6 @@ def run_pipeline(
         )
         return pipeline_result, None
 
-    # ------------------------------------------------------------------
-    # Stage 7: Illegal criteria in output
-    # ------------------------------------------------------------------
     illegal_output_check = illegal_criteria.check_illegal_criteria_output(llm_response)
     checks.append(illegal_output_check)
 
@@ -330,9 +253,6 @@ def run_pipeline(
         )
         return pipeline_result, None
 
-    # ------------------------------------------------------------------
-    # Stage 8: Determine final status and log
-    # ------------------------------------------------------------------
     overall_score = _compute_overall_score(checks)
     final_status = SafetyStatus.WARNING if warnings else SafetyStatus.ALLOWED
 

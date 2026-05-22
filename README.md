@@ -85,7 +85,7 @@ See [THREAT_MODEL.md](THREAT_MODEL.md) for the full STRIDE analysis.
 
 ---
 
-## Red Team Results (Placeholder)
+## Red Team Results
 
 | Category | Tests | Passed | Pass Rate |
 |----------|-------|--------|-----------|
@@ -96,8 +96,7 @@ See [THREAT_MODEL.md](THREAT_MODEL.md) for the full STRIDE analysis.
 | Illegal Criteria | 7 | 7 | 100% |
 | **Total** | **35** | **33** | **94.3%** |
 
-> **Risk Rating: MEDIUM** — Run `python red_team/report_generator.py` to
-> generate live results against your deployment.
+> **Risk Rating: MEDIUM** — These results reflect pattern-matching layer only (no API key required). Run `python red_team/report_generator.py` against a live deployment for full end-to-end results including LLM-based checks.
 
 ---
 
@@ -227,8 +226,7 @@ tail -10 audit_log.jsonl | python -m json.tool
 
 ## Security Notes
 
-- **CORS**: `allow_origins=["*"]` is set for development. Restrict to your
-  domain in production.
+- **CORS**: `allow_origins=["*"]` is set for development. Set the `ALLOWED_ORIGINS` environment variable to your domain before any production deployment (e.g. `ALLOWED_ORIGINS=https://yourdomain.com`).
 - **API key**: Never commit `.env` — it is in `.gitignore`.
 - **Audit log**: The JSONL log stores only SHA-256 hashes of raw inputs,
   never plaintext PII.

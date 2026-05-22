@@ -1,5 +1,3 @@
-"""Safety-related Pydantic schemas for GuardHire."""
-
 from enum import Enum
 from typing import Dict, List, Optional
 
@@ -7,8 +5,6 @@ from pydantic import BaseModel, Field
 
 
 class ThreatLevel(str, Enum):
-    """Threat severity level."""
-
     NONE = "NONE"
     LOW = "LOW"
     MEDIUM = "MEDIUM"
@@ -17,16 +13,12 @@ class ThreatLevel(str, Enum):
 
 
 class SafetyStatus(str, Enum):
-    """Overall safety pipeline decision."""
-
     ALLOWED = "ALLOWED"
     WARNING = "WARNING"
     BLOCKED = "BLOCKED"
 
 
 class SafetyCheckResult(BaseModel):
-    """Result from a single safety check."""
-
     check_name: str = Field(..., description="Name of the safety check performed")
     passed: bool = Field(..., description="Whether the check passed")
     threat_level: ThreatLevel = Field(..., description="Assessed threat level")
@@ -43,8 +35,6 @@ class SafetyCheckResult(BaseModel):
 
 
 class PIIDetectionReport(BaseModel):
-    """Report of PII detected and redacted."""
-
     pii_types_found: List[str] = Field(
         default_factory=list, description="Types of PII detected"
     )
@@ -57,8 +47,6 @@ class PIIDetectionReport(BaseModel):
 
 
 class BiasDetectionResult(BaseModel):
-    """Result from the bias detection check."""
-
     check_name: str = "bias_detector"
     passed: bool
     threat_level: ThreatLevel
@@ -75,8 +63,6 @@ class BiasDetectionResult(BaseModel):
 
 
 class IllegalCriteriaResult(BaseModel):
-    """Result from illegal screening criteria check."""
-
     check_name: str = "illegal_criteria"
     passed: bool
     threat_level: ThreatLevel
@@ -93,8 +79,6 @@ class IllegalCriteriaResult(BaseModel):
 
 
 class SafetyPipelineResult(BaseModel):
-    """Aggregated result from the full safety pipeline."""
-
     status: SafetyStatus
     overall_safety_score: float = Field(
         ge=0.0, le=1.0, description="Weighted safety score; higher = safer"
@@ -109,8 +93,6 @@ class SafetyPipelineResult(BaseModel):
 
 
 class AuditLogEntry(BaseModel):
-    """Single entry in the append-only audit log."""
-
     timestamp: str = Field(..., description="ISO 8601 timestamp")
     session_id: str = Field(..., description="UUID for the request session")
     endpoint: str = Field(..., description="API endpoint called")

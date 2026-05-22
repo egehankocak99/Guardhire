@@ -1,9 +1,3 @@
-"""Toxicity filtering for LLM outputs in GuardHire.
-
-Analyses model-generated text for toxic, offensive, or harassing content
-before it is returned to the end user.
-"""
-
 from __future__ import annotations
 
 import json
@@ -14,10 +8,6 @@ from typing import List, Tuple
 import anthropic
 
 from schemas.safety import SafetyCheckResult, ThreatLevel
-
-# ---------------------------------------------------------------------------
-# Lightweight keyword/pattern check  (fast pre-filter before LLM call)
-# ---------------------------------------------------------------------------
 
 _TOXICITY_PATTERNS: List[re.Pattern[str]] = [
     re.compile(p, re.IGNORECASE)
@@ -38,7 +28,6 @@ _TOXICITY_PATTERNS: List[re.Pattern[str]] = [
 
 
 def _pattern_toxicity_score(text: str) -> Tuple[float, List[str]]:
-    """Return (score, matched_patterns) for pattern-based toxicity."""
     matched: List[str] = []
     for pat in _TOXICITY_PATTERNS:
         m = pat.search(text)
@@ -49,13 +38,8 @@ def _pattern_toxicity_score(text: str) -> Tuple[float, List[str]]:
     return min(1.0, len(matched) * 0.3), matched
 
 
-# ---------------------------------------------------------------------------
-# LLM-based toxicity check
-# ---------------------------------------------------------------------------
-
-
 def _llm_toxicity_score(text: str) -> float:
-    """Ask Claude to score toxicity.  Returns float 0.0–1.0."""
+    """Ask Claude to score toxicity. Returns float 0.0–1.0."""
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         return 0.0
@@ -83,17 +67,7 @@ def _llm_toxicity_score(text: str) -> float:
         return 0.0
 
 
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
-
-
 def check_toxicity(text: str) -> SafetyCheckResult:
-    """
-    Check LLM output for toxic or harmful content.
-
-    Returns a :class:`SafetyCheckResult`.  Blocks if toxicity score > 0.6.
-    """
     pattern_score, pattern_matches = _pattern_toxicity_score(text)
 
     # Only invoke LLM classifier when patterns triggered or as a periodic check

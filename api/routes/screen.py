@@ -1,11 +1,8 @@
-"""POST /screen — CV screening endpoint."""
-
 from __future__ import annotations
 
 import sys
 import os
 
-# Ensure project root is on path when running via uvicorn from root
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from fastapi import APIRouter, HTTPException, status
@@ -21,13 +18,8 @@ router = APIRouter()
     "/screen",
     response_model=ScreeningResponse,
     summary="Screen a candidate CV against a job description",
-    description=(
-        "Accepts a CV and job description, runs the full GuardHire safety pipeline, "
-        "and returns a structured fit assessment if all safety checks pass."
-    ),
 )
 async def screen_endpoint(request: ScreeningRequest) -> ScreeningResponse:
-    """CV screening endpoint — wrapped by the safety pipeline."""
     try:
         screening_result, pipeline_result = screen_cv(
             cv_text=request.cv_text,

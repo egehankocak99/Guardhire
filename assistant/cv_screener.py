@@ -1,9 +1,3 @@
-"""CV screening logic for GuardHire.
-
-This module wraps the LLM-based CV screening behind the safety pipeline.
-The safety pipeline handles PII redaction, bias detection, and audit logging.
-"""
-
 from __future__ import annotations
 
 import json
@@ -26,11 +20,6 @@ def _call_llm(
     job_description: str,
     client: anthropic.Anthropic,
 ) -> str:
-    """
-    Perform the actual LLM call for CV screening.
-
-    Returns the raw JSON string from the model.
-    """
     user_message = SCREENING_USER_TEMPLATE.format(
         job_description=job_description,
         cv_text=cv_text,
@@ -50,36 +39,15 @@ def screen_cv(
     job_description: str,
     session_id: Optional[str] = None,
 ) -> tuple[CVScreeningResult | None, SafetyPipelineResult]:
-    """
-    Screen a CV against a job description.
-
-    Parameters
-    ----------
-    cv_text:
-        Raw CV text (may contain PII — will be redacted before LLM call).
-    job_description:
-        Job description text.
-    session_id:
-        Optional session UUID for audit log correlation.
-
-    Returns
-    -------
-    (CVScreeningResult or None, SafetyPipelineResult)
-        If the pipeline is BLOCKED, CVScreeningResult will be None.
-    """
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         raise EnvironmentError("ANTHROPIC_API_KEY environment variable is not set.")
 
     client = anthropic.Anthropic(api_key=api_key)
 
-    # Combine texts for pipeline inspection; JD is passed as extra_input
     combined_input = f"CV:\n{cv_text}\n\nJOB DESCRIPTION:\n{job_description}"
 
-    # Build LLM callable — closure captures the redacted text provided by pipeline
     def llm_callable(redacted_input: str) -> str:
-        # Separate redacted CV from JD (pipeline only redacts cv_text here;
-        # JD is assumed not to contain candidate PII)
         return _call_llm(redacted_input, job_description, client)
 
     pipeline_result, llm_response = run_pipeline(
@@ -93,9 +61,7 @@ def screen_cv(
     if pipeline_result.status == SafetyStatus.BLOCKED or llm_response is None:
         return None, pipeline_result
 
-    # Parse LLM JSON response into structured schema
     try:
-        # Strip markdown code fences if model wrapped them
         clean = llm_response.strip()
         if clean.startswith("```"):
             clean = clean.split("```")[1]
@@ -110,7 +76,6 @@ def screen_cv(
         }
         return result, pipeline_result
     except (json.JSONDecodeError, ValueError) as exc:
-        # Parsing failure — return blocked result with error detail
         from schemas.safety import SafetyCheckResult, SafetyStatus, ThreatLevel
 
         error_check = SafetyCheckResult(

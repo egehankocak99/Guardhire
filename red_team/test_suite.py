@@ -1,25 +1,8 @@
-"""Automated red team test suite for GuardHire — 35 adversarial test cases.
-
-Run with: pytest red_team/test_suite.py -v
-
-Each test sends adversarial input through the safety pipeline and asserts
-that:
-  - Malicious inputs are BLOCKED (true positives)
-  - Legitimate inputs are ALLOWED or WARNING but never BLOCKED (true negatives)
-
-The test suite does NOT make real LLM calls for the safety checks themselves
-(those use lightweight pattern matching) but WILL make an LLM call for
-the screening/question generation step if the input passes the pipeline.
-Set ANTHROPIC_API_KEY to run end-to-end, or the LLM step will be skipped
-for BLOCKED cases (no key needed for them).
-"""
-
 from __future__ import annotations
 
 import sys
 import os
 
-# Ensure project root is importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import pytest
@@ -36,39 +19,20 @@ from safety import input_guard, illegal_criteria as illegal_mod
 from schemas.safety import SafetyStatus
 
 
-# ---------------------------------------------------------------------------
-# Helper: run input-layer safety checks (does not require LLM key)
-# ---------------------------------------------------------------------------
-
-
 def _run_input_safety(cv_text: str, job_description: str) -> SafetyStatus:
-    """
-    Run input guard + illegal criteria input check only.
-
-    This allows the red team tests to run without an ANTHROPIC_API_KEY
-    for cases that should be blocked at the input layer.
-    """
-    # Input guard — CV text
     cv_check = input_guard.check_input(cv_text, field_name="cv_text")
     if not cv_check.passed and cv_check.score >= 0.7:
         return SafetyStatus.BLOCKED
 
-    # Input guard — job description
     jd_check = input_guard.check_input(job_description, field_name="job_description")
     if not jd_check.passed and jd_check.score >= 0.7:
         return SafetyStatus.BLOCKED
 
-    # Illegal criteria — job description
     ic_check = illegal_mod.check_illegal_criteria_input(job_description)
     if not ic_check.passed:
         return SafetyStatus.BLOCKED
 
     return SafetyStatus.ALLOWED
-
-
-# ---------------------------------------------------------------------------
-# Prompt Injection Tests (8 tests)
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -82,7 +46,6 @@ def test_prompt_injection(
     job_description: str,
     should_block: bool,
 ) -> None:
-    """Prompt injection attempts should be detected and blocked."""
     status = _run_input_safety(cv_text, job_description)
     if should_block:
         assert status == SafetyStatus.BLOCKED, (
@@ -94,11 +57,6 @@ def test_prompt_injection(
             f"[{test_id}] FALSE POSITIVE — Expected ALLOWED/WARNING but got BLOCKED. "
             f"Test: {description}"
         )
-
-
-# ---------------------------------------------------------------------------
-# Jailbreak Tests (7 tests)
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -112,7 +70,6 @@ def test_jailbreaks(
     job_description: str,
     should_block: bool,
 ) -> None:
-    """Jailbreak attempts should be detected and blocked."""
     status = _run_input_safety(cv_text, job_description)
     if should_block:
         assert status == SafetyStatus.BLOCKED, (
@@ -124,11 +81,6 @@ def test_jailbreaks(
             f"[{test_id}] FALSE POSITIVE — Expected ALLOWED/WARNING but got BLOCKED. "
             f"Test: {description}"
         )
-
-
-# ---------------------------------------------------------------------------
-# Bias Elicitation Tests (8 tests)
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -142,7 +94,6 @@ def test_bias_elicitation(
     job_description: str,
     should_block: bool,
 ) -> None:
-    """Bias elicitation attempts in job descriptions should be blocked."""
     status = _run_input_safety(cv_text, job_description)
     if should_block:
         assert status == SafetyStatus.BLOCKED, (
@@ -154,11 +105,6 @@ def test_bias_elicitation(
             f"[{test_id}] FALSE POSITIVE — Expected ALLOWED/WARNING but got BLOCKED. "
             f"Test: {description}"
         )
-
-
-# ---------------------------------------------------------------------------
-# PII Extraction Tests (5 tests)
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -172,7 +118,6 @@ def test_pii_extraction(
     job_description: str,
     should_block: bool,
 ) -> None:
-    """PII extraction attempts should be blocked; normal CVs with PII should pass with redaction."""
     status = _run_input_safety(cv_text, job_description)
     if should_block:
         assert status == SafetyStatus.BLOCKED, (
@@ -184,11 +129,6 @@ def test_pii_extraction(
             f"[{test_id}] FALSE POSITIVE — Expected ALLOWED/WARNING but got BLOCKED. "
             f"Test: {description}"
         )
-
-
-# ---------------------------------------------------------------------------
-# Illegal Criteria Tests (7 tests)
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -202,7 +142,6 @@ def test_illegal_criteria(
     job_description: str,
     should_block: bool,
 ) -> None:
-    """Illegal screening criteria in job descriptions should be detected and blocked."""
     status = _run_input_safety(cv_text, job_description)
     if should_block:
         assert status == SafetyStatus.BLOCKED, (
@@ -216,16 +155,9 @@ def test_illegal_criteria(
         )
 
 
-# ---------------------------------------------------------------------------
-# Additional edge case tests (to reach 35 total)
-# ---------------------------------------------------------------------------
-
-
 def test_empty_cv_rejected() -> None:
-    """Extremely short/empty CV should fail length validation."""
     from safety.input_guard import check_input
     result = check_input("Hi", field_name="cv")
-    # Short input is not an injection — just validate it doesn't throw
     assert result.check_name == "input_guard"
 
 

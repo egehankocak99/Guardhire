@@ -1,21 +1,9 @@
-"""PII detection and redaction for GuardHire.
-
-PII redaction is applied BEFORE any LLM call so that no personal
-identifiable information is ever sent to the model.  The original text
-is preserved in memory for the audit log (hashed, never stored in plain
-text in the safety result).
-"""
-
 from __future__ import annotations
 
 import re
 from typing import Dict, List, Tuple
 
 from schemas.safety import PIIDetectionReport, SafetyCheckResult, ThreatLevel
-
-# ---------------------------------------------------------------------------
-# Regex patterns for structured PII
-# ---------------------------------------------------------------------------
 
 _PII_PATTERNS: Dict[str, re.Pattern[str]] = {
     "EMAIL": re.compile(
@@ -68,7 +56,6 @@ _PII_PATTERNS: Dict[str, re.Pattern[str]] = {
     ),
 }
 
-# Placeholder tokens used in redacted text
 _PLACEHOLDER_MAP: Dict[str, str] = {
     "EMAIL": "[REDACTED_EMAIL]",
     "PHONE_INTL": "[REDACTED_PHONE]",
@@ -86,16 +73,8 @@ _PLACEHOLDER_MAP: Dict[str, str] = {
     "PERSON_NAME": "[REDACTED_NAME]",
 }
 
-# ---------------------------------------------------------------------------
-# Lightweight NER fallback using spaCy (optional)
-# ---------------------------------------------------------------------------
-
 
 def _extract_names_spacy(text: str) -> List[Tuple[str, int, int]]:
-    """
-    Use spaCy to extract PERSON entities.  Returns list of (span, start, end).
-    Falls back to empty list if spaCy model is not installed.
-    """
     try:
         import spacy  # type: ignore
 
@@ -114,9 +93,6 @@ def _extract_names_spacy(text: str) -> List[Tuple[str, int, int]]:
         return []
 
 
-# ---------------------------------------------------------------------------
-# Name detection via heuristic patterns (fallback when spaCy unavailable)
-# ---------------------------------------------------------------------------
 
 _NAME_HEURISTIC = re.compile(
     r"(?:^|\n)\s*(?:Name|Full\s+Name|Candidate)\s*[:\-]?\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})",
@@ -125,7 +101,6 @@ _NAME_HEURISTIC = re.compile(
 
 
 def _extract_names_heuristic(text: str) -> List[Tuple[str, int, int]]:
-    """Extract candidate name using a simple 'Name: Firstname Lastname' heuristic."""
     matches = []
     for m in _NAME_HEURISTIC.finditer(text):
         name_span = m.group(1)
@@ -135,33 +110,16 @@ def _extract_names_heuristic(text: str) -> List[Tuple[str, int, int]]:
     return matches
 
 
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
-
-
 def redact_pii(text: str) -> PIIDetectionReport:
-    """
-    Detect and redact PII from the supplied text.
-
-    Processing order:
-    1. spaCy NER for names (or heuristic fallback)
-    2. Regex patterns for structured PII
-
-    Returns a :class:`PIIDetectionReport` containing the redacted text and
-    a summary of what was found.  The original text is NOT stored here.
-    """
     working_text = text
     redaction_map: Dict[str, str] = {}
     pii_types_found: List[str] = []
     total_count = 0
 
-    # --- 1. Name extraction ---
     name_spans = _extract_names_spacy(text)
     if not name_spans:
         name_spans = _extract_names_heuristic(text)
 
-    # Apply name redactions (process in reverse order to preserve offsets)
     for name, start, end in sorted(name_spans, key=lambda x: x[1], reverse=True):
         if name not in redaction_map:
             redaction_map[name] = _PLACEHOLDER_MAP["PERSON_NAME"]
@@ -169,7 +127,6 @@ def redact_pii(text: str) -> PIIDetectionReport:
         working_text = working_text[:start] + redaction_map[name] + working_text[end:]
         total_count += 1
 
-    # --- 2. Structured PII via regex ---
     for pii_type, pattern in _PII_PATTERNS.items():
         placeholder = _PLACEHOLDER_MAP[pii_type]
         found_items: List[str] = []
@@ -193,15 +150,6 @@ def redact_pii(text: str) -> PIIDetectionReport:
 
 
 def check_pii(text: str, field_name: str = "input") -> Tuple[SafetyCheckResult, str]:
-    """
-    Run PII detection and return both a :class:`SafetyCheckResult` and the
-    redacted version of the text.
-
-    The SafetyCheckResult always passes (PII redaction is a mitigation, not a
-    blocker), but the threat level reflects how much PII was found.
-
-    Returns ``(SafetyCheckResult, redacted_text)``.
-    """
     report = redact_pii(text)
 
     if report.count == 0:

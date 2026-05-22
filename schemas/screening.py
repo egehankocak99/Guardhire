@@ -1,5 +1,3 @@
-"""CV screening Pydantic schemas for GuardHire."""
-
 from enum import Enum
 from typing import List, Optional
 
@@ -7,15 +5,12 @@ from pydantic import BaseModel, Field
 
 
 class Recommendation(str, Enum):
-    """Hiring recommendation for a candidate."""
-
     ADVANCE = "Advance"
     HOLD = "Hold"
     REJECT = "Reject"
 
 
 class FitScore(BaseModel):
-    """Score for a single job requirement."""
 
     requirement: str = Field(..., description="The job requirement being scored")
     score: float = Field(
@@ -28,7 +23,6 @@ class FitScore(BaseModel):
 
 
 class CVScreeningResult(BaseModel):
-    """Structured result from CV screening."""
 
     overall_fit_score: float = Field(
         ..., ge=0.0, le=10.0, description="Weighted overall fit score"

@@ -1,9 +1,3 @@
-"""Input validation and prompt injection detection for GuardHire.
-
-Every piece of user-supplied text (CV content, job description, role
-description) passes through this guard BEFORE being sent to the LLM.
-"""
-
 from __future__ import annotations
 
 import os
@@ -15,13 +9,8 @@ import anthropic
 
 from schemas.safety import SafetyCheckResult, ThreatLevel
 
-# ---------------------------------------------------------------------------
-# Constants
-# ---------------------------------------------------------------------------
+MAX_INPUT_LENGTH = 50_000
 
-MAX_INPUT_LENGTH = 50_000  # characters
-
-# Common prompt injection phrases (case-insensitive)
 _INJECTION_PATTERNS: list[re.Pattern[str]] = [
     re.compile(p, re.IGNORECASE)
     for p in [
@@ -48,7 +37,6 @@ _INJECTION_PATTERNS: list[re.Pattern[str]] = [
     ]
 ]
 
-# Zero-width / invisible unicode codepoints
 _ZERO_WIDTH = {
     "\u200b",  # ZERO WIDTH SPACE
     "\u200c",  # ZERO WIDTH NON-JOINER
@@ -58,7 +46,6 @@ _ZERO_WIDTH = {
     "\u00ad",  # SOFT HYPHEN (invisible)
 }
 
-# Homoglyph lookalike codepoints (small representative set)
 _HOMOGLYPH_RANGES = [
     (0x0400, 0x04FF),  # Cyrillic
     (0x0370, 0x03FF),  # Greek
@@ -66,18 +53,11 @@ _HOMOGLYPH_RANGES = [
 ]
 
 
-# ---------------------------------------------------------------------------
-# Helper utilities
-# ---------------------------------------------------------------------------
-
-
 def _contains_zero_width(text: str) -> bool:
-    """Return True if the text contains invisible/zero-width characters."""
     return any(ch in _ZERO_WIDTH for ch in text)
 
 
 def _contains_homoglyphs(text: str) -> bool:
-    """Detect probable homoglyph substitution (non-Latin lookalikes)."""
     suspicious = 0
     for ch in text:
         cp = ord(ch)
@@ -85,20 +65,11 @@ def _contains_homoglyphs(text: str) -> bool:
             if start <= cp <= end:
                 suspicious += 1
                 break
-    # Flag if more than 5 suspicious characters — some docs legitimately use
-    # a small number of non-Latin characters (e.g. proper nouns).
     return suspicious > 5
 
 
 def _pattern_injection_score(text: str) -> Tuple[float, list[str]]:
-    """
-    Return a (score, matched_patterns) tuple based on regex matching.
 
-    Score:
-      0 matches  → 0.0
-      1 match    → 0.5
-      2+ matches → 0.9
-    """
     matched: list[str] = []
     for pattern in _INJECTION_PATTERNS:
         if pattern.search(text):
@@ -106,23 +77,11 @@ def _pattern_injection_score(text: str) -> Tuple[float, list[str]]:
     if not matched:
         return 0.0, []
     if len(matched) == 1:
-        return 0.5, matched
+        return 0.6, matched
     return 0.9, matched
 
 
-# ---------------------------------------------------------------------------
-# LLM-based secondary check
-# ---------------------------------------------------------------------------
-
-
 def _llm_injection_probability(text: str) -> float:
-    """
-    Send a small classifier prompt to Claude asking whether the supplied text
-    contains an attempt to manipulate an AI assistant.
-
-    Returns a probability float 0.0–1.0.
-    Gracefully falls back to 0.0 on API errors to prevent availability issues.
-    """
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         return 0.0
@@ -154,27 +113,9 @@ def _llm_injection_probability(text: str) -> float:
         return 0.0
 
 
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
-
-
 def check_input(text: str, field_name: str = "input") -> SafetyCheckResult:
-    """
-    Run all input guard checks on a single text field.
-
-    Checks performed (in order):
-    1. Length check
-    2. Zero-width / invisible character detection
-    3. Homoglyph detection
-    4. Pattern-based injection detection
-    5. LLM-based injection classification (if pattern score < threshold)
-
-    Returns a :class:`SafetyCheckResult` instance.
-    """
     injection_threshold = float(os.getenv("INJECTION_THRESHOLD", "0.7"))
 
-    # --- 1. Length check ---
     if len(text) > MAX_INPUT_LENGTH:
         return SafetyCheckResult(
             check_name="input_guard",
@@ -189,7 +130,6 @@ def check_input(text: str, field_name: str = "input") -> SafetyCheckResult:
             recommendation="Truncate input to within allowed limits and resubmit.",
         )
 
-    # --- 2. Zero-width characters ---
     if _contains_zero_width(text):
         return SafetyCheckResult(
             check_name="input_guard",
@@ -203,19 +143,21 @@ def check_input(text: str, field_name: str = "input") -> SafetyCheckResult:
             recommendation="Remove all zero-width and invisible Unicode characters.",
         )
 
-    # --- 3. Homoglyph detection ---
     homoglyph_detected = _contains_homoglyphs(text)
 
-    # --- 4. Pattern injection detection ---
     pattern_score, matched_patterns = _pattern_injection_score(text)
 
-    # --- 5. LLM-based detection (only when patterns already flagged, to save cost) ---
     llm_score = 0.0
     if pattern_score >= 0.5 or homoglyph_detected:
         llm_score = _llm_injection_probability(text)
 
-    # Combine scores: pattern score has weight 0.6, LLM score 0.4
-    combined_score = (pattern_score * 0.6) + (llm_score * 0.4)
+    # Combine scores: pattern score has weight 0.6, LLM score 0.4.
+    # When LLM is unavailable (score == 0.0) use pattern score directly so
+    # that single-pattern matches are not artificially deflated.
+    if llm_score > 0.0:
+        combined_score = (pattern_score * 0.6) + (llm_score * 0.4)
+    else:
+        combined_score = pattern_score
 
     # Add homoglyph penalty
     if homoglyph_detected:

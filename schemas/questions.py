@@ -1,5 +1,3 @@
-"""Interview question Pydantic schemas for GuardHire."""
-
 from enum import Enum
 from typing import List, Optional
 
@@ -7,8 +5,6 @@ from pydantic import BaseModel, Field
 
 
 class QuestionCategory(str, Enum):
-    """Category for an interview question."""
-
     TECHNICAL = "Technical"
     BEHAVIOURAL = "Behavioural"
     SITUATIONAL = "Situational"
@@ -17,8 +13,6 @@ class QuestionCategory(str, Enum):
 
 
 class SeniorityLevel(str, Enum):
-    """Candidate seniority level."""
-
     JUNIOR = "Junior"
     MID = "Mid"
     SENIOR = "Senior"
@@ -26,7 +20,6 @@ class SeniorityLevel(str, Enum):
 
 
 class InterviewQuestion(BaseModel):
-    """A single structured interview question."""
 
     category: QuestionCategory = Field(..., description="Question category")
     question: str = Field(..., description="The interview question text")
@@ -42,7 +35,6 @@ class InterviewQuestion(BaseModel):
 
 
 class QuestionSet(BaseModel):
-    """Complete set of structured interview questions."""
 
     job_role: str = Field(..., description="The role being interviewed for")
     seniority_level: SeniorityLevel = Field(..., description="Expected seniority level")
